@@ -6,9 +6,7 @@
 """Asyncio transports for FTDI D2XX devices."""
 from abc import abstractmethod
 import asyncio
-from warnings import warn
 from ftd2xx import FTD2XX, DeviceError
-from ftd2xx.ftd2xx import LOGGER
 from ftd2xx.defines import ModemStatus
 
 from .protocols import FTD2xxProtocol
@@ -188,7 +186,7 @@ class AbstractFTD2xxReadTransport(FTD2xxBaseTransport, asyncio.ReadTransport):
 
     def pause_reading(self):
         """Pause the receiving end of the transport.
-        No data will be passed to the protocol’s data_received() method
+        No data will be passed to the protocol's data_received() method
         until resume_reading() is called.
         """
         self._remove_reader()
