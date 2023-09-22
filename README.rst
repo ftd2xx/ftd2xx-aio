@@ -8,7 +8,7 @@ ftd2xx-aio
 
 ftd2xx-aio is an extension of `ftd2xx`_ (a wrapper around the `D2XX drivers`_ for FTDI devices)
 that adds a transport/protocol layer (similar to `pyserial-asyncio`_). This allows the user to
-take advantage of asyncronous callbacks on connections, rather than polling for data themselves.
+take advantage of asynchronous callbacks on connections, rather than polling for data themselves.
 
 
 ------
@@ -37,5 +37,5 @@ to your project here and there. You are so great to work with!
     image:: https://img.shields.io/badge/python-3.9%2B-blue.svg
         :target: https://www.python.org/
 .. |pdm|
-  image:: https://img.shields.io/badge/pdm-managed-blueviolet
-  :target: https://pdm.fming.dev
+    image:: https://img.shields.io/badge/pdm-managed-blueviolet
+        :target: https://pdm.fming.dev
