@@ -5,6 +5,7 @@
 #
 """Asyncio transports for FTDI D2XX devices."""
 from abc import abstractmethod
+from typing import Optional, Union
 import asyncio
 from ftd2xx import FTD2XX, DeviceError
 from ftd2xx.defines import ModemStatus
@@ -26,7 +27,7 @@ class FTD2xxBaseTransport(asyncio.BaseTransport):
     def __init__(
         self,
         loop: asyncio.BaseEventLoop,
-        protocol: FTD2xxProtocol,
+        protocol: Union[asyncio.Protocol, FTD2xxProtocol],
         ftd2xx_instance: FTD2XX,
     ):
         super().__init__()
@@ -79,7 +80,7 @@ class FTD2xxBaseTransport(asyncio.BaseTransport):
         if not self._closing:
             self._close(None)
 
-    def set_protocol(self, protocol):
+    def set_protocol(self, protocol: asyncio.Protocol):
         # TODO: Is there a graceful procedure for setting protocol?
         self._protocol = protocol
 
@@ -155,9 +156,9 @@ class FTD2xxBaseTransport(asyncio.BaseTransport):
 
     def _post_connection_lost(self):
         self._ftd2xx.close()
-        self._ftd2xx = None
-        self._protocol = None
-        self._loop = None
+        # self._ftd2xx = None
+        # self._protocol = None
+        # self._loop = None
 
 
 class AbstractFTD2xxReadTransport(FTD2xxBaseTransport, asyncio.ReadTransport):
@@ -166,8 +167,8 @@ class AbstractFTD2xxReadTransport(FTD2xxBaseTransport, asyncio.ReadTransport):
     def __init__(self, loop, protocol_factory, ftd2xx_instance):
         super().__init__(loop, protocol_factory, ftd2xx_instance)
         self._max_read_size = 1024
-        self._has_reader = False
-        self._has_modem = False
+        self._has_reader: Optional[asyncio.Handle] = None
+        self._has_modem: Optional[asyncio.Handle] = None
         self._is_reading = False
         self._modem = ModemStatus(0)
         loop.call_soon(self._ensure_reader)
@@ -226,7 +227,11 @@ class AbstractFTD2xxReadTransport(FTD2xxBaseTransport, asyncio.ReadTransport):
                 self._fatal_error(exc, "Fatal read error on ftd2xx transport")
 
     def _poll_modem(self):
-        if self._has_reader and not self._closing:
+        if (
+            isinstance(self._protocol, FTD2xxProtocol)
+            and self._has_reader
+            and not self._closing
+        ):
             self._loop.call_later(self._poll_wait_time, self._poll_modem)
             try:
                 modem = self._ftd2xx.getModemStatus()
@@ -240,16 +245,16 @@ class AbstractFTD2xxReadTransport(FTD2xxBaseTransport, asyncio.ReadTransport):
         if not self._closing:
             if not self._has_reader:
                 self._has_reader = self._loop.call_soon(self._poll_read)
-            if not self._has_modem:
+            if isinstance(self._protocol, FTD2xxProtocol) and not self._has_modem:
                 self._has_modem = self._loop.call_soon(self._poll_modem)
 
     def _remove_reader(self):
         if self._has_reader:
             self._has_reader.cancel()
-        self._has_reader = False
+        self._has_reader = None
         if self._has_modem:
             self._has_modem.cancel()
-        self._has_modem = False
+        self._has_modem = None
 
 
 class AbstractFTD2xxWriteTransport(FTD2xxBaseTransport, asyncio.WriteTransport):
@@ -259,7 +264,7 @@ class AbstractFTD2xxWriteTransport(FTD2xxBaseTransport, asyncio.WriteTransport):
         super().__init__(loop, protocol_factory, ftd2xx_instance)
         self._write_buffer = []
         self._protocol_paused = False
-        self._has_writer = False
+        self._has_writer: Optional[asyncio.Handle] = None
         self._max_out_waiting = 1024
         self._set_write_buffer_limits()
 
@@ -457,7 +462,7 @@ class AbstractFTD2xxWriteTransport(FTD2xxBaseTransport, asyncio.WriteTransport):
     def _remove_writer(self):
         if self._has_writer:
             self._has_writer.cancel()
-        self._has_writer = False
+        self._has_writer = None
 
 
 class FTD2xxReadTransport(AbstractFTD2xxReadTransport):
