@@ -13,7 +13,7 @@ license = {text = "MIT"}
 dynamic = ["version"]
 
 [project.urls]
-homepage = ""
+homepage = "https://github.com/ftd2xx/ftd2xx-aio"
 
 [tool]
 [tool.pdm]
